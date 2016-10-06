@@ -1,19 +1,23 @@
+upstream ajenti {
+	server 127.0.0.1:8000;
+}
+
 server {
 	listen 80;
-	server_name sbr.devjoe.me;
+	server_name tcdg.kelnet.org;
 	return 301 https://$host$request_uri;
 }
 
 server {
 	listen 443 ssl;
-	server_name sbr.devjoe.me;
-	#server_name sbr.collectivedev.com;
-	root /srv/sbr/webroot;
-	index index.php;
+	#listen 80;
+	server_name tcdg.kelnet.org;
+	#root /var/www/git;
+	#index index.php;
 
         # certs sent to the client in SERVER HELLO are concatenated in ssl_certificate
-        ssl_certificate /etc/letsencrypt/live/sbr.devjoe.me/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/sbr.devjoe.me/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/tcdg.kelnet.org/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/tcdg.kelnet.org/privkey.pem;
         ssl_session_timeout 1d;
         ssl_session_cache shared:SSL:50m;
         ssl_session_tickets off;
@@ -36,16 +40,25 @@ server {
 
         resolver 8.8.8.8;
 
-        location / {
-                # First attempt to serve request as file, then
-                # as directory, then fall back to displaying a 404.
-                try_files $uri $uri/ =404;
-        }
 
-	location ~ \.php$ {
-               include snippets/fastcgi-php.conf;
-               # With php5-fpm:
-               fastcgi_pass unix:/var/run/php5-fpm.sock;
-        }
+	location /ajenti {
+		rewrite (/ajenti)$ / break;
+		rewrite /ajenti/(.*) /$1 break;
+
+		proxy_pass              http://ajenti;
+		proxy_redirect /        /ajenti/;
+		proxy_set_header        Host             $host;
+		proxy_set_header        X-Forwarded-For  $proxy_add_x_forwarded_for;
+		proxy_http_version      1.1;
+		proxy_set_header        Upgrade          $http_upgrade;
+		proxy_set_header        Connection       $http_connection;
+		proxy_set_header        Origin           http://$host;
+	}
+
+	#location ~ \.php$ {
+        #       include snippets/fastcgi-php.conf;
+        #       # With php5-fpm:
+        #       fastcgi_pass unix:/var/run/php5-fpm.sock;
+        #}
 }
 

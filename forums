@@ -1,19 +1,19 @@
 server {
 	listen 80;
-	server_name sbr.devjoe.me;
+	server_name forums.collectivedev.com;
 	return 301 https://$host$request_uri;
 }
 
 server {
 	listen 443 ssl;
-	server_name sbr.devjoe.me;
+	server_name forums.collectivedev.com;
 	#server_name sbr.collectivedev.com;
-	root /srv/sbr/webroot;
+	root /var/www/forums;
 	index index.php;
 
         # certs sent to the client in SERVER HELLO are concatenated in ssl_certificate
-        ssl_certificate /etc/letsencrypt/live/sbr.devjoe.me/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/sbr.devjoe.me/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/forums.collectivedev.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/forums.collectivedev.com/privkey.pem;
         ssl_session_timeout 1d;
         ssl_session_cache shared:SSL:50m;
         ssl_session_tickets off;

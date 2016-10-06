@@ -1,19 +1,23 @@
+upstream gitlab-workhorse {
+	server unix:/var/opt/gitlab/gitlab-workhorse/socket fail_timeout=0;
+}
+
 server {
 	listen 80;
-	server_name sbr.devjoe.me;
+	server_name git.collectivedev.com;
 	return 301 https://$host$request_uri;
 }
 
 server {
 	listen 443 ssl;
-	server_name sbr.devjoe.me;
-	#server_name sbr.collectivedev.com;
-	root /srv/sbr/webroot;
-	index index.php;
+	#listen 80;
+	server_name git.collectivedev.com;
+	#root /var/www/git;
+	#index index.php;
 
         # certs sent to the client in SERVER HELLO are concatenated in ssl_certificate
-        ssl_certificate /etc/letsencrypt/live/sbr.devjoe.me/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/sbr.devjoe.me/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/git.collectivedev.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/git.collectivedev.com/privkey.pem;
         ssl_session_timeout 1d;
         ssl_session_cache shared:SSL:50m;
         ssl_session_tickets off;
@@ -37,15 +41,26 @@ server {
         resolver 8.8.8.8;
 
         location / {
-                # First attempt to serve request as file, then
-                # as directory, then fall back to displaying a 404.
-                try_files $uri $uri/ =404;
+		client_max_body_size 0;
+		gzip off;
+		## https://github.com/gitlabhq/gitlabhq/issues/694
+		## Some requests take more than 30 seconds.
+		proxy_read_timeout      300;
+		proxy_connect_timeout   300;
+		proxy_redirect          off;
+		proxy_http_version 1.1;
+		proxy_set_header    Host                $http_host;
+		proxy_set_header    X-Real-IP           $remote_addr;
+		proxy_set_header    X-Forwarded-Ssl     on;
+		proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
+		proxy_set_header    X-Forwarded-Proto   $scheme;
+		proxy_pass		http://gitlab-workhorse;
         }
 
-	location ~ \.php$ {
-               include snippets/fastcgi-php.conf;
-               # With php5-fpm:
-               fastcgi_pass unix:/var/run/php5-fpm.sock;
-        }
+	#location ~ \.php$ {
+        #       include snippets/fastcgi-php.conf;
+        #       # With php5-fpm:
+        #       fastcgi_pass unix:/var/run/php5-fpm.sock;
+        #}
 }
 
